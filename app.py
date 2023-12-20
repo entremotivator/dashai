@@ -16,16 +16,30 @@ def upload_file(ftp, local_path, remote_path):
     with open(local_path, 'rb') as file:
         ftp.storbinary(f"STOR {remote_path}", file)
 
+# Function to create or load FTP configurations
+def load_ftp_config():
+    ftp_configurations = st.session_state.get("ftp_configurations", [])
+    return ftp_configurations
+
+def save_ftp_config(ftp_configurations):
+    st.session_state.ftp_configurations = ftp_configurations
+
 # Streamlit App
 def main():
     st.title("FTP File and Operations")
 
     # Sidebar with FTP Settings
     st.sidebar.title("FTP Settings")
-    domain = st.sidebar.text_input("FTP Domain:", "")
-    username = st.sidebar.text_input("FTP Username:", "")
-    password = st.sidebar.text_input("FTP Password:", "", type="password")
-    site_name = st.sidebar.text_input("Site Name:", "")
+
+    ftp_configurations = load_ftp_config()
+
+    selected_config_index = st.sidebar.selectbox("Select FTP Configuration", range(len(ftp_configurations)), format_func=lambda i: ftp_configurations[i].get("site_name", f"Site {i+1}"))
+    current_config = ftp_configurations[selected_config_index] if ftp_configurations else {}
+
+    current_config["domain"] = st.sidebar.text_input("FTP Domain:", current_config.get("domain", ""))
+    current_config["username"] = st.sidebar.text_input("FTP Username:", current_config.get("username", ""))
+    current_config["password"] = st.sidebar.text_input("FTP Password:", current_config.get("password", ""), type="password")
+    current_config["site_name"] = st.sidebar.text_input("Site Name:", current_config.get("site_name", ""))
 
     # Create an FTP instance
     ftp = FTP()
@@ -37,8 +51,8 @@ def main():
     with col1:
         if st.button("List Files and Folders", key="list_files"):
             with st.spinner("Connecting to FTP..."):
-                ftp.connect(domain)
-                ftp.login(username, password)
+                ftp.connect(current_config["domain"])
+                ftp.login(current_config["username"], current_config["password"])
                 files_folders_df = list_files_folders(ftp)
                 st.write("### Files and Folders:")
                 st.write(files_folders_df)
@@ -57,8 +71,8 @@ def main():
         if uploaded_file is not None:
             if st.button("Upload File", key="upload_file"):
                 with st.spinner("Connecting to FTP..."):
-                    ftp.connect(domain)
-                    ftp.login(username, password)
+                    ftp.connect(current_config["domain"])
+                    ftp.login(current_config["username"], current_config["password"])
                     upload_file(ftp, uploaded_file, os.path.join("uploads", uploaded_file.name))
                     st.success(f"File '{uploaded_file.name}' uploaded successfully.")
 
@@ -180,6 +194,11 @@ def main():
 
     # Close FTP connection
     ftp.quit()
+
+    # Save current FTP configuration
+    if current_config not in ftp_configurations:
+        ftp_configurations.append(current_config)
+        save_ftp_config(ftp_configurations)
 
 if __name__ == '__main__':
     main()
