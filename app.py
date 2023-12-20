@@ -24,7 +24,7 @@ def main():
 
     # Page with Buttons
     st.header("File and Folder Management")
-    col1, col2, col3 = st.beta_columns(3)
+    col1, col2, col3 = st.columns(3)
 
     with col1:
         if st.button("List Files and Folders"):
@@ -81,7 +81,7 @@ def main():
 
     # Additional Tabs and Buttons for Database Management, Performance Optimization, and Troubleshooting...
     st.header("Database Management")
-    col4, col5, col6 = st.beta_columns(3)
+    col4, col5, col6 = st.columns(3)
 
     with col4:
         if st.button("Export and Backup Database"):
@@ -111,7 +111,7 @@ def main():
             st.write("Functionality for updating site URLs in the database.")
 
     st.header("Performance Optimization")
-    col7, col8, col9 = st.beta_columns(3)
+    col7, col8, col9 = st.columns(3)
 
     with col7:
         if st.button("Compress and Optimize Images"):
@@ -144,7 +144,7 @@ def main():
             st.write("Functionality for optimizing .htaccess for performance.")
 
     st.header("Troubleshooting and Debugging")
-    col10, col11, col12 = st.beta_columns(3)
+    col10, col11, col12 = st.columns(3)
 
     with col10:
         if st.button("Enable WordPress Debug Mode"):
@@ -181,3 +181,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
