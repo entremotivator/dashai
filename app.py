@@ -2,35 +2,46 @@ import streamlit as st
 import os
 import shutil
 import pandas as pd
+from ftplib import FTP
 
 # Function to list files and folders
-def list_files_folders(path='.'):
+def list_files_folders(ftp, path='.'):
     files_folders = []
-    for name in os.listdir(path):
-        full_path = os.path.join(path, name)
-        files_folders.append({'Name': name, 'Type': 'File' if os.path.isfile(full_path) else 'Folder'})
+    ftp.cwd(path)
+    ftp.retrlines('LIST', lambda x: files_folders.append({'Name': x.split()[-1], 'Type': 'File' if x.startswith('-') else 'Folder'}))
     return pd.DataFrame(files_folders)
 
 # Function to upload a file
-def upload_file(local_path, remote_path):
-    shutil.copy(local_path, remote_path)
+def upload_file(ftp, local_path, remote_path):
+    with open(local_path, 'rb') as file:
+        ftp.storbinary(f"STOR {remote_path}", file)
 
 # Streamlit App
 def main():
-    st.title("Local File and Operations")
+    st.title("FTP File and Operations")
 
-    # Sidebar with API Settings
-    st.sidebar.title("Settings")
+    # Sidebar with FTP Settings
+    st.sidebar.title("FTP Settings")
+    domain = st.sidebar.text_input("FTP Domain:", "")
+    username = st.sidebar.text_input("FTP Username:", "")
+    password = st.sidebar.text_input("FTP Password:", "", type="password")
+    site_name = st.sidebar.text_input("Site Name:", "")
+
+    # Create an FTP instance
+    ftp = FTP()
 
     # Page with Buttons
-    st.header("File and Folder Management")
+    st.header("FTP File and Folder Management")
     col1, col2, col3 = st.columns(3)
 
     with col1:
         if st.button("List Files and Folders", key="list_files"):
-            files_folders_df = list_files_folders()
-            st.write("### Files and Folders:")
-            st.write(files_folders_df)
+            with st.spinner("Connecting to FTP..."):
+                ftp.connect(domain)
+                ftp.login(username, password)
+                files_folders_df = list_files_folders(ftp)
+                st.write("### Files and Folders:")
+                st.write(files_folders_df)
 
         if st.button("Upload New Themes", key="upload_themes"):
             st.write("Functionality for uploading new themes.")
@@ -41,27 +52,21 @@ def main():
         if st.button("Create Backup", key="create_backup"):
             st.write("Functionality for creating a backup.")
 
-        if st.button("Organize Media Files", key="organize_media"):
-            st.write("Functionality for organizing media files.")
-
-        if st.button("Delete Unused Themes and Plugins", key="delete_unused"):
-            st.write("Functionality for deleting unused themes and plugins.")
-
     with col2:
         uploaded_file = st.file_uploader("Upload a File", type=["zip", "tar.gz"])
         if uploaded_file is not None:
             if st.button("Upload File", key="upload_file"):
-                upload_file(uploaded_file, os.path.join("uploads", uploaded_file.name))
-                st.success(f"File '{uploaded_file.name}' uploaded successfully.")
+                with st.spinner("Connecting to FTP..."):
+                    ftp.connect(domain)
+                    ftp.login(username, password)
+                    upload_file(ftp, uploaded_file, os.path.join("uploads", uploaded_file.name))
+                    st.success(f"File '{uploaded_file.name}' uploaded successfully.")
 
         if st.button("Install and Update Plugins", key="install_update_plugins"):
             st.write("Functionality for installing and updating plugins.")
 
         if st.button("Customize CSS for Themes/Plugins", key="customize_css"):
             st.write("Functionality for customizing CSS.")
-
-        if st.button("Delete Unused Themes and Plugins", key="delete_unused_plugins"):
-            st.write("Functionality for deleting unused themes and plugins.")
 
     with col3:
         if st.button("Download a File", key="download_file"):
@@ -72,12 +77,6 @@ def main():
 
         if st.button("Manage and Organize wp-content Folder", key="manage_organize"):
             st.write("Functionality for managing and organizing wp-content folder.")
-
-        if st.button("Upload Custom Fonts to Theme", key="upload_fonts"):
-            st.write("Functionality for uploading custom fonts.")
-
-        if st.button("Search and Replace URLs in Database", key="search_replace_urls"):
-            st.write("Functionality for searching and replacing URLs in the database.")
 
     # Additional Tabs and Buttons for Database Management, Performance Optimization, and Troubleshooting...
     st.header("Database Management")
@@ -179,6 +178,8 @@ def main():
         if st.button("Disable WordPress Theme via FTP", key="disable_theme_ftp"):
             st.write("Functionality for disabling the WordPress theme via FTP.")
 
+    # Close FTP connection
+    ftp.quit()
+
 if __name__ == '__main__':
     main()
-
